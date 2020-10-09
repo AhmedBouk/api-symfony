@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Media;
 use App\Entity\Commune;
 use OpenApi\Annotations as OA;
+use App\Repository\MediaRepository;
 use App\Repository\CommuneRepository;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use Nelmio\ApiDocBundle\Annotation\Security;
@@ -140,38 +141,24 @@ class CommuneController extends AbstractController
      * @OA\Tag(name="Commune")
      * @param Request $request
      * @param CommuneRepository $communeRepository
-     * @return Response
+     * @return JsonResponse
      */
     public function communeUpdate(Request $request, CommuneRepository $communeRepository)
     {
         $entityManager = $this->getDoctrine()->getManager();
-        $response = new Response();
-        $data = json_decode(
-            $request->getContent(),
-            true
-        );
-        if (isset($data["commune_id"]) && isset($data["nom"]) && isset($data["code"]) && isset($data["codeDepartement"]) && isset($data["codeRegion"]) && isset($data["codesPostaux"]) && isset($data["population"])) {
-            $id = $data["commune_id"];
-            $commune = $communeRepository->find($id);
-            if ($commune === null) {
-                $response->setContent("Cette commune n'existe pas");
-                $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            } else {
-                $commune->setNom($data["nom"])
-                    ->setCode($data["code"])
-                    ->setCodeDepartement($data["codeDepartement"])
-                    ->setcodeRegion($data["codeRegion"])
-                    ->setCodesPostaux($data["codesPostaux"])
-                    ->setPopulation($data["population"]);
-                $entityManager->persist($commune);
-                $entityManager->flush();
-                $response->setStatusCode(Response::HTTP_OK);
-                $response->setContent("Modification of commune " . $id);
-            }
-        } else {
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-        }
-        return $response;
+        $data = json_decode($request->getContent(),true);
+        $commune = $communeRepository->findOneBy(['id' => $data['commune_id']]);
+        isset($data["nom"]) && $commune->setNom($data['nom']);
+        isset($data["code"]) && $commune->setCode($data['code']);
+        isset($data["codeDepartement"]) && $commune->setCodeDepartement($data['codeDepartement']);
+        isset($data["codeRegion"]) && $commune->setcodeRegion($data['codeRegion']);
+        isset($data["codesPostaux"]) && $commune->setCodesPostaux($data['codesPostaux']);
+        isset($data["population"]) && $commune->setPopulation($data['population']);
+  
+        $entityManager->persist($commune);
+        $entityManager->flush();
+        return JsonResponse::fromJsonString($this->serializeJson($commune));
+       
     }
 
     /**
